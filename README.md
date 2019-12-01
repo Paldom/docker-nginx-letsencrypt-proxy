@@ -51,7 +51,7 @@ Please set up at least A records in DNS properly for
 
 ```yaml
 
-version: '3.7'
+version: '3.3'
 services:
 
   nginx: 
