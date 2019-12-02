@@ -47,7 +47,7 @@ You can define as many service you want:
 ### Examples
 
 #### 1. Proxy services from a docker network
-Here's a simple `docker-compose.yml` to try this image with your domain. `service1` and `service2` are dummy hosts running in docker network. 
+Here's a simple `docker-compose.yml` to try this image with your domain. `service1` and `service2` are dummy services running in docker network. 
 
 ```yaml
 
@@ -107,7 +107,7 @@ networks:
 
 ```
 
-#### 2. Proxy services from a host network
+#### 2. Proxy services from host network
 `docker-compose.yml` to serve `localhost:3001` and `localhost:3002` services from your host network.
 
 ```yaml
@@ -136,7 +136,7 @@ services:
 
 ```
 
-#### 3. Proxy services from a host network with docker run
+#### 3. Proxy services from host network with docker run
 
 Pull image from Docker Hub:
 
@@ -153,7 +153,7 @@ docker build -t dpal/docker-nginx-letsencrypt-proxy github.com/paldom/docker-ngi
 Run image with `docker run` instead of `docker-compose`:
 
 ```sh
-docker run -d --network host --expose=80 --expose=443 \
+docker run --network host --expose=80 --expose=443 \
   -e EMAIL=public@dpal.hu \
   -e SERVICE_HOST_1=api1.yourdomain.com \
   -e SERVICE_ADDRESS_1=localhost \
