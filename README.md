@@ -44,14 +44,14 @@ You can define as many service you want:
 * **SERVICE_ADDRESS_N** - Nth internal address
 * **SERVICE_PORT_N** - Nth internal port
 
-### Example
+### Examples
 
-A simple `docker-compose.yml` to try this image with your domain.
-Please set up at least A records in DNS properly for 
+#### 1. Proxy services from a docker network
+Here's a simple `docker-compose.yml` to try this image with your domain. `service1` and `service2` are dummy hosts running in docker network. 
 
 ```yaml
 
-version: '3.3'
+version: '3.4'
 services:
 
   nginx: 
@@ -105,6 +105,63 @@ networks:
     driver: bridge
 
 
+```
+
+#### 2. Proxy services from a host network
+`docker-compose.yml` to serve `localhost:3001` and `localhost:3002` services from your host network.
+
+```yaml
+
+version: '3.4'
+services:
+
+  nginx: 
+    image: dpal/docker-nginx-letsencrypt-proxy:latest
+    container_name: nginx
+    environment:
+      - EMAIL=public@dpal.hu
+      - SERVICE_HOST_1=api1.yourdomain.com
+      - SERVICE_ADDRESS_1=localhost
+      - SERVICE_PORT_1=3001
+      - SERVICE_HOST_2=api2.yourdomain.com
+      - SERVICE_ADDRESS_2=localhost
+      - SERVICE_PORT_2=3002
+    volumes:
+      - ./data/nginx/error.log:/etc/nginx/error_log.log
+      - ./data/nginx/cache/:/etc/nginx/cache
+    expose:
+      - "80"
+      - "443"
+    network_mode: host
+
+```
+
+#### 3. Proxy services from a host network with docker run
+
+Pull image from Docker Hub:
+
+```sh
+docker pull dpal/docker-nginx-letsencrypt-proxy:latest
+```
+
+Or build from GitHub:
+
+```sh
+docker build -t dpal/docker-nginx-letsencrypt-proxy github.com/paldom/docker-nginx-letsencrypt-proxy
+```
+
+Run image with `docker run` instead of `docker-compose`:
+
+```sh
+docker run -d --network host --expose=80 --expose=443 \
+  -e EMAIL=public@dpal.hu \
+  -e SERVICE_HOST_1=api1.yourdomain.com \
+  -e SERVICE_ADDRESS_1=localhost \
+  -e SERVICE_PORT_1=3001 \
+  -e SERVICE_HOST_2=api2.yourdomain.com \
+  -e SERVICE_ADDRESS_2=localhost \
+  -e SERVICE_PORT_2=3002 \
+  dpal/docker-nginx-letsencrypt-proxy:latest
 ```
 
 ## NGINX
