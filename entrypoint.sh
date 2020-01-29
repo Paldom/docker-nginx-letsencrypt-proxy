@@ -6,13 +6,16 @@ while : ; do
     host="SERVICE_HOST_$i"
     address="SERVICE_ADDRESS_$i"
     port="SERVICE_PORT_$i"
-    if [[ -z "${!host}" || -z "${!address}" || -z "${!port}" ]]; then
+    if [[ -z "${!host}" || -z "${!address}" || -z "${!port}" ]] && [ ! -e /etc/nginx/conf.d/${!host}.conf ]; then
         i=$[$i-1]
         break
     fi
     if [ -e /etc/letsencrypt/live/"${!host}"/fullchain.pem ] 
     then
-        echo "Certificaate is already created for host ${!host}" 
+        echo "Certificate is already created for host ${!host}" 
+    elif [ -e /etc/nginx/conf.d/${!host}.conf ]
+    then
+        certbot -n --nginx -d ${!host} --agree-tos --email $EMAIL
     else
         cp example.com.conf /etc/nginx/conf.d/${!host}.conf
         sed -i "s|example.com|${!host}|g" /etc/nginx/conf.d/${!host}.conf
