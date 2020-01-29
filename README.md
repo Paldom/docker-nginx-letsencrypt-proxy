@@ -44,6 +44,8 @@ You can define as many service you want:
 * **SERVICE_ADDRESS_N** - Nth internal address
 * **SERVICE_PORT_N** - Nth internal port
 
+It is possible to use custom nginx `.conf` file mounted as volume (e.g. `-v ./custom.com.conf:/etc/nginx/conf.d/api.yourdomain.com.conf`). `SERVICE_ADDRESS_N` and `SERVICE_PORT_N` propeties are not required in that case, you should only specify host name (`SERVICE_HOST_N`).
+
 ### Examples
 
 #### 1. Proxy services from a docker network
@@ -51,7 +53,7 @@ Here's a simple `docker-compose.yml` to try this image with your domain. `servic
 
 ```yaml
 
-version: '3.4'
+version: '3.7'
 services:
 
   nginx: 
@@ -99,20 +101,51 @@ services:
     networks:
       - api-network 
 
+networks:
+  api-network:
+    driver: bridge
+
+```
+
+#### 2. Proxy services with custom nginx configuration
+Same as above but using a custom nginx configuration.
+
+```yaml
+
+version: '3.7'
+services:
+
+  nginx: 
+    image: dpal/docker-nginx-letsencrypt-proxy:latest
+    container_name: nginx
+    environment:
+      - EMAIL=public@dpal.hu
+      - SERVICE_HOST_3=api3.yourdomain.com
+    volumes:
+      - ./data/nginx/error.log:/etc/nginx/error_log.log
+      - ./data/nginx/cache/:/etc/nginx/cache
+      - ./custom.com.conf:/etc/nginx/conf.d/api3.yourdomain.com.conf
+    ports:
+      - 80:80
+      - 443:443
+    expose:
+      - "80"
+      - "443"
+    networks:
+      - api-network
 
 networks:
   api-network:
     driver: bridge
 
-
 ```
 
-#### 2. Proxy services from host network
+#### 3. Proxy services from host network
 `docker-compose.yml` to serve `localhost:3001` and `localhost:3002` services from your host network.
 
 ```yaml
 
-version: '3.4'
+version: '3.7'
 services:
 
   nginx: 
@@ -136,7 +169,7 @@ services:
 
 ```
 
-#### 3. Proxy services from host network with docker run
+#### 4. Proxy services from host network with docker run
 
 Pull image from Docker Hub:
 
@@ -195,5 +228,36 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
 }
 
+
+```
+
+A possible content for `./custom.com.conf` file in example 2. (Proxy services with custom nginx configuration).
+
+```conf
+
+server {
+    server_name api3.example.com;
+    location / {
+      proxy_pass http://service1:3001;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection 'upgrade';
+      proxy_set_header Host $host;
+      proxy_cache_bypass $http_upgrade;
+    }
+    location ^~ /api {
+      rewrite ^/api/(.*)$ /$1 break;
+      proxy_pass http://service2:3002;
+      proxy_redirect off;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    if ($scheme != "https") {
+        return 301 https://$host$request_uri;
+    }
+    listen 80;
+}
 
 ```
